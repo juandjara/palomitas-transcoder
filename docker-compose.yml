@@ -1,0 +1,49 @@
+version: '3'
+services:
+  nginx:
+    container_name: palomitas-transcoder-www
+    build: www
+    labels:
+      - traefik.frontend.rule=Host:palomitas-queue.fuken.xyz
+      - traefik.port=80
+    volumes:
+      - ./www:/usr/src/app
+    links:
+      - node
+
+  node:
+    container_name: palomitas-transcoder-api
+    build: api
+    command: npm start
+    restart: always
+    labels:
+      - traefik.enable=false
+    networks:
+      - redis
+    ports:
+      - 4000:4000
+    env_file:
+      - .env.prod
+    depends_on:
+      - redis
+    links:
+      - redis
+
+  redis:
+    container_name: palomitas-transcoder-redis
+    networks:
+      - redis
+    labels:
+      - traefik.enable=false
+    image: "redis:alpine"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+
+networks:
+  redis:
+  web:
+    external: true
+
+volumes:
+  redis-data:

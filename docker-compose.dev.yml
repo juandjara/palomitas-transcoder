@@ -1,0 +1,30 @@
+version: '3'
+services:
+  node:
+    container_name: palomitas-transcoder-api
+    build: api
+    restart: always
+    command: npm run dev
+    volumes:
+      - ./api:/usr/app
+    ports:
+      - 4000:4000
+      - 9229:9229 # node debugger port
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    links:
+      - redis
+
+  redis:
+    container_name: palomitas-transcoder-redis
+    ports:
+      - 6379:6379
+    image: "redis:alpine"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
