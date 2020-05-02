@@ -130,6 +130,9 @@ app.get('/jobs', wrapAsync(async (req, res) => {
 
 app.get('/jobs/:id', wrapAsync(async (req, res) => {
   const job = await videoQueue.getJob(req.params.id)
+  if (!job) {
+    res.status(404).json({ error: 'job not found' })
+  }
   res.json({ job })
 }))
 
@@ -151,10 +154,23 @@ app.post('/jobs', wrapAsync(async (req, res) => {
 
 app.delete('/jobs', wrapAsync(async (req, res) => {
   const gracePeriod = req.query.grace || 1000
-  const status = req.query.status
   const limit = req.query.limit
+  const status = req.query.status
+  if (!status) {
+    res.status(400).json({ error: 'Parameter "?status" is required. Valid values are completed, wait, active, sdelayed, and failed.' })
+  }
   const ids = await videoQueue.clean(gracePeriod, status, limit)
   res.json({ message: `cleaned ${ids.length} jobs`, deleted_ids: ids })
+}))
+
+app.delete('/jobs/:id', wrapAsync(async (req, res) => {
+  const job = await videoQueue.getJob(req.params.id)
+  if (!job) {
+    res.status(404).json({ error: 'job not found' })
+  }
+  await job.discard()
+  await job.remove()
+  res.json({ message: `deleted job with id ${job.id}` })
 }))
 
 const port = process.env.PORT || 4000
