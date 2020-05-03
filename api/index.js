@@ -87,7 +87,8 @@ function ffmpegCommand (path, job, done) {
       job.progress(percent)
     })
     .on('end', async () => {
-      const deleted = await del([path, { force: true }])
+      const deleted = await del([path], { force: true })
+      job.progress(100)
       job.log(`[del] Deleted temporary file in ${deleted}`)
       done()
     })
