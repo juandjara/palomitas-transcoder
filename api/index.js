@@ -33,7 +33,6 @@ const axios = require('axios')
 const tempy = require('tempy')
 const del = require('del')
 const fs = require('fs')
-const ffprobe = require('node-ffprobe')
 
 videoQueue.process(async (job, done) => {
   const url = job.data.url
@@ -62,16 +61,13 @@ function ffmpegCommand (path, job, done) {
     .videoCodec('libvpx')
     .audioCodec('libvorbis')
     .format('webm')
-    // .audioBitrate(128)
-    // .videoBitrate(1024)
+    .audioBitrate(128)
+    .videoBitrate(1024)
     .outputOptions([
-      '-pix_fmt yuv420p',
-      '-color_primaries 1',
-      '-color_trc 1',
-      '-colorspace 1',
-      '-movflags +faststart',
-      '-quality good',
-      '-crf 32'
+      '-crf 17',
+      '-error-resilient 1',
+      '-deadline good',
+      '-cpu-used 2'
     ])
     .on('start', cmd => {
       job.log(`[ffmpeg] ${cmd}`)
@@ -91,7 +87,7 @@ function ffmpegCommand (path, job, done) {
       job.progress(percent)
     })
     .on('end', async () => {
-      const deleted = await del([path])
+      const deleted = await del([path, { force: true }])
       job.log(`[del] Deleted temporary file in ${deleted}`)
       done()
     })
