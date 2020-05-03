@@ -13,9 +13,10 @@ code {
 }
 
 body {
-  background-size: 50px 50px;
-  background-image: linear-gradient(0deg, rgba(255, 255, 255, .2) 50%, transparent 50%, transparent);
-  background-color: #f90;
+  background-size: 150px 150px;
+  background-image: url('/background-noise.png');
+  background-color: #4f43f2;
+  background-repeat: repeat;
   color: white;
   min-height: 100vh;
 }
