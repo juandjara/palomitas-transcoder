@@ -235,6 +235,7 @@ function App() {
           <div className="job" key={job.id}>
             <header>
               <h3>Job #{job.id}</h3>
+              <Button background="#ccc" onClick={() => fetchJobs()}>Refresh</Button>
               <div className="spacer"></div>
               <Button background="limegreen" onClick={() => fetchLogs(job)}>Logs</Button>
               <Button background="indianred" onClick={() => onDelete(job)}>Remove</Button>
