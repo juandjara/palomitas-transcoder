@@ -29,6 +29,7 @@
     "helmet": "^3.22.0",
     "morgan": "^1.10.0",
     "node-ffprobe": "^3.0.0",
+    "redis-info": "^3.0.7",
     "tempy": "^0.5.0"
   },
   "devDependencies": {

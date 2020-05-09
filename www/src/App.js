@@ -1,143 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components'
-
-const AppStyles = styled.div`
-  h1 {
-    text-align: center;
-    padding: 2rem;
-    font-size: 48px;
-    line-height: 50px;
-  }
-
-  main {
-    padding: 1rem;
-    border-radius: 1rem;
-    background-color: white;
-    margin-bottom: 3rem;
-    color: #333;
-  }
-
-  footer {
-    text-align: right;
-    font-size: 12px;
-    position: fixed;
-    bottom: 0;
-    right: 0;
-    padding: 5px 12px 5px 12px;
-    background-color: white;
-    color: #747474;
-    border-radius: 4px 0 0 0;
-  }
-
-  .container {
-    margin: 0 auto;
-    max-width: 960px;
-    position: relative;
-  }
-
-  .job {
-    margin-bottom: 2rem;
-
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      .spacer {
-        flex-grow: 1;
-      }
-
-      button {
-        margin-left: 8px;
-      }
-    }
-
-    summary {
-      cursor: pointer;
-    }
-  }
-
-  pre {
-    overflow-x: scroll;
-    max-width: 100%;
-    background-color: #f2f2f2;
-    border-radius: 1rem;
-    padding: 8px;
-    margin-top: 8px;
-    margin-bottom: 0;
-  }
-
-  .no-data {
-    text-align: center;
-    font-weight: 500;
-  }
-
-  .add-btn {
-    position: absolute;
-    right: 0;
-    bottom: 50%;
-    transform: translateY(50%);
-  }
-
-  svg {
-    display: block;
-  }
-
-  .add-form {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    margin-bottom: 1rem;
-
-    input {
-      flex-grow: 1;
-      padding: 1px 4px;
-      font-size: 12px;
-      line-height: 22px;
-    }
-
-    button {
-      border-radius: 0 4px 4px 0;
-    }
-  }
-
-  .logs {
-    max-height: 360px;
-    overflow-y: auto;
-  }
-`
-
-const Button = styled.button`
-  border: none;
-  background-color: #ccc;
-  color: white;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 4px;
-  background-color: ${props => props.background || 'white'};
-
-  ${props => props.icon ? `
-    padding: 8px;
-  ` : ''}
-
-  ${props => props.icontext ? `
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding-left: 8px;
-
-    svg {
-      margin-right: 4px;
-    }
-  ` : ''}
-
-  &:hover {
-    opacity: 0.8;
-  }
-`
+import Button from './Button'
+import AppStyles from './AppStyles'
+import RedisStats from './RedisStats'
 
 const API = 'http://localhost:4000'
 
@@ -165,6 +29,10 @@ function getLogs (id) {
   return fetch(`${API}/jobs/${id}/logs`).then(res => res.json())
 }
 
+function getMetrics () {
+  return fetch(`${API}/metrics`).then(res => res.json())
+}
+
 function AddIcon ({ color = '#609' }) {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill={color}>
@@ -174,9 +42,15 @@ function AddIcon ({ color = '#609' }) {
 }
 
 function App() {
+  const [metrics, setMetrics] = useState(null)
   const [jobs, setJobs] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [newUrl, setNewUrl] = useState("")
+
+  async function fetchMetrics () {
+    const data = await getMetrics()
+    setMetrics(data)
+  }
 
   async function fetchJobs () {
     const data = await getJobs()
@@ -211,6 +85,7 @@ function App() {
 
   useEffect(() => {
     fetchJobs()
+    fetchMetrics()
   }, [])
 
   return (
@@ -229,6 +104,7 @@ function App() {
           <span>Add video job</span>
         </Button>
       </form>)}
+      {metrics && <RedisStats className="container" stats={metrics} />}
       <main className="container">
         {jobs.length === 0 && <p className="no-data">No jobs in the queue</p>}
         {jobs.map(job => (
@@ -240,6 +116,11 @@ function App() {
               <Button background="limegreen" onClick={() => fetchLogs(job)}>Logs</Button>
               <Button background="indianred" onClick={() => onDelete(job)}>Remove</Button>
             </header>
+            <p className="progress-label">Transcode progress</p>
+            <div className="progress-wrapper">
+              <p>{job.progress.toFixed(2)}%</p>
+              <progress value={job.progress} max="100" />
+            </div>
             {job.logs && (<details open>
               <summary>Logs</summary>
               <pre className="logs">

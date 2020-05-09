@@ -7,6 +7,7 @@ const bodyParser = require('body-parser')
 const pkg = require('./package.json')
 const { wrapAsync, ErrorWithCode } = require('./errorHandler')
 const Queue = require('bull')
+const redisMetrics = require('./redisMetrics')
 
 const app = express()
 
@@ -109,7 +110,12 @@ app.get('/', (req, res) => {
       'DELETE /jobs?grace=1000&status=&limit='
     ]
   })
-})  
+})
+
+app.get('/metrics', wrapAsync(async (req, res) => {
+  const metrics = await redisMetrics(videoQueue)
+  res.json(metrics)
+}))
 
 app.get('/counts', wrapAsync(async (req, res) => {
   const counts = await videoQueue.getJobCounts()
