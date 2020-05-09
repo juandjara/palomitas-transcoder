@@ -2,36 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from './Button'
 import AppStyles from './AppStyles'
 import RedisStats from './RedisStats'
-
-const API = 'http://localhost:4000'
-
-function getJobs () {
-  return fetch(`${API}/jobs`).then(res => res.json())
-}
-
-function deleteJob (id) {
-  return fetch(`${API}/jobs/${id}`, {
-    method: 'DELETE'
-  }).then(res => res.json())
-}
-
-function addJob (url) {
-  return fetch(`${API}/jobs`, {
-    method: 'POST',
-    body: JSON.stringify({ url }),
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  }).then(res => res.json())
-}
-
-function getLogs (id) {
-  return fetch(`${API}/jobs/${id}/logs`).then(res => res.json())
-}
-
-function getMetrics () {
-  return fetch(`${API}/metrics`).then(res => res.json())
-}
+import { getJobs, deleteJob, addJob, getLogs, getMetrics } from './apiService'
 
 function AddIcon ({ color = '#609' }) {
   return (
@@ -98,10 +69,10 @@ function App() {
         <input 
           value={newUrl}
           onChange={ev => setNewUrl(ev.target.value)}
-          placeholder="Video URL" />
+          placeholder="Enter video URL here" />
         <Button icontext background="limegreen">
           <AddIcon color="white" />
-          <span>Add video job</span>
+          <span>Add job</span>
         </Button>
       </form>)}
       {metrics && <RedisStats className="container" stats={metrics} />}
