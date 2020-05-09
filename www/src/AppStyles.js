@@ -91,16 +91,21 @@ const AppStyles = styled.div`
     align-items: center;
     justify-content: flex-start;
     margin-bottom: 1rem;
+    border-radius: 4px;
+    background-color: white;
+    padding: 6px 8px;
 
     input {
-      flex-grow: 1;
-      padding: 1px 4px;
-      font-size: 12px;
-      line-height: 22px;
+      flex: 1 0 auto;
+      font-size: 14px;
+      line-height: 2;
+      border: none;
+      padding: 0 4px;
+      margin-right: 8px;
     }
-
+    
     button {
-      border-radius: 0 4px 4px 0;
+      margin-right: -2px;
     }
   }
 
