@@ -2,12 +2,21 @@ import React, { useState, useEffect } from 'react';
 import Button from './Button'
 import AppStyles from './AppStyles'
 import RedisStats from './RedisStats'
+import Modal from './Modal'
 import { getJobs, deleteJob, cancelJob, addJob, getLogs, getMetrics } from './apiService'
 
 function AddIcon ({ color = '#609' }) {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill={color}>
       <path d="M7.086 0.5L7.967 0.5 7.967 7.033 14.5 7.033 14.5 7.967 7.967 7.967 7.967 14.5 7.086 14.5 7.086 7.967 0.5 7.967 0.5 7.033 7.086 7.033z"/>
+    </svg>
+  )
+}
+
+function CloseIcon ({ color = '#9397A2' }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill={color}>
+      <path fillRule="evenodd" d="M14.293 4.293l1.414 1.414L11.414 10l4.293 4.293-1.414 1.414L10 11.414l-4.293 4.293-1.414-1.414L8.586 10 4.293 5.707l1.414-1.414L10 8.586l4.293-4.293z"/>
     </svg>
   )
 }
@@ -22,11 +31,22 @@ function formatDate (str) {
   })
 }
 
+// const Modal = styled.div`
+//   position: fixed;
+//   top: 0;
+//   left: 0;
+//   width: 100%;
+//   height: 100%;
+//   background-color: rgba(0,0,0, 0.25);
+//   z-index: 1;
+// `
+
 function App() {
   const [metrics, setMetrics] = useState(null)
   const [jobs, setJobs] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [newUrl, setNewUrl] = useState("")
+  const [logs, setLogs] = useState(null)
 
   async function fetchMetrics () {
     const data = await getMetrics()
@@ -61,12 +81,7 @@ function App() {
 
   async function fetchLogs ({ id }) {
     const { logs } = await getLogs(id)
-    setJobs(jobs.map(job => {
-      if (job.id === id) {
-        job.logs = logs
-      }
-      return job
-    }))
+    setLogs(logs)
   }
 
   useEffect(() => {
@@ -76,9 +91,28 @@ function App() {
 
   return (
     <AppStyles className="body-background">
+      {logs && (
+        <Modal onClose={() => setLogs(null)}>
+          <header>
+            <h2>Logs</h2>
+            <Button title="Close" icon onClick={() => setLogs(null)}>
+              <CloseIcon />
+            </Button>
+          </header>
+          <main>
+            <pre className="logs">
+              <code>
+                {logs.join('\n')}
+              </code>
+            </pre>
+          </main>
+        </Modal>
+      )}
       <header className="container">
         <h1>Palomitas Transcoder</h1>
-        <Button title="Add new job" icon onClick={toggleForm} className="add-btn"><AddIcon /></Button>
+        <Button title="Add new job" icon onClick={toggleForm} className="add-btn">
+          <AddIcon />
+        </Button>
       </header>
       {showForm && (<form onSubmit={onSubmit} className="container add-form">
         <input 
@@ -129,6 +163,12 @@ function App() {
                 </div>
               )}
             </div>
+            <details>
+              <summary>Input Data</summary>
+              <pre>
+                <code>{JSON.stringify(job.data, null, 2)}</code>
+              </pre>
+            </details>
             {job.failedReason && (
               <details>
                 <summary><strong>Error:</strong> {job.failedReason}</summary>
@@ -139,20 +179,14 @@ function App() {
                 </pre>
               </details>
             )}
-            <details>
-              <summary>Input Data</summary>
-              <pre>
-                <code>{JSON.stringify(job.data, null, 2)}</code>
-              </pre>
-            </details>
-            {job.logs && (<details open>
+            {/* {job.logs && (<details open>
               <summary>Logs</summary>
               <pre className="logs">
                 <code>
                   {job.logs.join('\n')}
                 </code>
               </pre>
-            </details>)}
+            </details>)} */}
           </div>
         ))}
       </main>

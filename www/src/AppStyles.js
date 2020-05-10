@@ -61,7 +61,7 @@ const AppStyles = styled.div`
   }
 
   pre {
-    overflow-x: scroll;
+    overflow-x: auto;
     max-width: 100%;
     background-color: #f2f2f2;
     border-radius: 1rem;
@@ -148,6 +148,26 @@ const AppStyles = styled.div`
       }
     }
   }
+
+  .modal-inner {
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+
+      button {
+        margin-right: -8px;
+        &:hover, &:focus {
+          background-color: #f2f2f2;
+        }
+      }
+    }
+    
+    main {
+      padding: 8px 12px;
+    }
+  }s
 `
 
 export default AppStyles
