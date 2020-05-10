@@ -55,7 +55,9 @@ app.get('/', (req, res) => {
       'GET /jobs/:id',
       'GET /jobs/:id/logs?start=&end=',
       'POST /job { url }',
-      'DELETE /jobs?grace=1000&status=&limit='
+      'PUT /jobs/:id/cancel',
+      'DELETE /jobs?grace=1000&status=&limit=',
+      'DELETE /jobs/:id'
     ]
   })
 })
@@ -103,12 +105,28 @@ app.post('/jobs', wrapAsync(async (req, res) => {
   res.json({ message: 'job added', job })
 }))
 
+app.put('/jobs/:id/cancel', wrapAsync(async (req, res) => {
+  const job = await videoQueue.getJob(req.params.id)
+  if (!job) {
+    throw new ErrorWithCode(404, 'job not found')
+  }
+  const isActive = await job.isActive()
+  if (!isActive) {
+    throw new ErrorWithCode(400, 'Only active jobs can be cancelled')
+  }
+
+  await job.discard()
+  await job.moveToFailed({ message: 'Job cancelled by user' }, true)
+  await job.releaseLock()
+  res.json({ message: `cancelled job with id ${job.id}` })
+}))
+
 app.delete('/jobs', wrapAsync(async (req, res) => {
   const gracePeriod = req.query.grace || 1000
   const limit = req.query.limit
   const status = req.query.status
   if (!status) {
-    res.status(400).json({ error: 'Parameter "?status" is required. Valid values are completed, wait, active, sdelayed, and failed.' })
+    throw new ErrorWithCode(400, 'Parameter "?status" is required. Valid values are completed, wait, active, delayed, and failed.')
   }
   const ids = await videoQueue.clean(gracePeriod, status, limit)
   res.json({ message: `cleaned ${ids.length} jobs`, deleted_ids: ids })
@@ -117,13 +135,11 @@ app.delete('/jobs', wrapAsync(async (req, res) => {
 app.delete('/jobs/:id', wrapAsync(async (req, res) => {
   const job = await videoQueue.getJob(req.params.id)
   if (!job) {
-    res.status(404).json({ error: 'job not found' })
+    throw new ErrorWithCode(404, 'job not found')
   }
-  await job.discard()
   const isActive = await job.isActive()
   if (isActive) {
-    await job.moveToFailed({ message: 'Job cancelled by user' }, true)
-    await job.releaseLock()
+    throw new ErrorWithCode(400, 'Active jobs must be cancelled before being deleted')
   }
   await job.remove()
   res.json({ message: `deleted job with id ${job.id}` })
