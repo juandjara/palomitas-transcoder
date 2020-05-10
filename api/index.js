@@ -1,5 +1,5 @@
 require('dotenv').config()
-const express = require('express')
+const app = require('express')()
 const cors = require('cors')
 const helmet = require('helmet')
 const logger = require('morgan')
@@ -8,8 +8,7 @@ const pkg = require('./package.json')
 const { wrapAsync, ErrorWithCode } = require('./errorHandler')
 const Queue = require('bull')
 const redisMetrics = require('./redisMetrics')
-
-const app = express()
+const { ffmpegCommand } = require('./converter')
 
 app.set('json spaces', 2)
 app.use(cors())
@@ -24,15 +23,8 @@ const videoQueue = new Queue('video transcoding', {
   }
 })
 
-// STEPS:
-// 1. Connect to the video url and create a pipe that handles the downloading
-// 2. Plug that pipe into the ffmpeg command
-// 3. Get ffmpeg progress, error and complete events and send them to the queue
-// 4. Save result of transcoding into a file
-const ffmpeg = require('fluent-ffmpeg')
 const axios = require('axios')
 const tempy = require('tempy')
-const del = require('del')
 const fs = require('fs')
 
 videoQueue.process(async (job, done) => {
@@ -51,57 +43,13 @@ videoQueue.process(async (job, done) => {
   }
 })
 
-function parseDuration (timeStr) {
-  const [h, m, s] = timeStr.split(':').map(Number)
-  return (h * 60 * 60) + (m * 60) + s
-}
-
-function ffmpegCommand (path, job, done) {
-  let duration = 0
-  ffmpeg(path)
-    .videoCodec('libvpx')
-    .audioCodec('libvorbis')
-    .format('webm')
-    .audioBitrate(128)
-    .videoBitrate(1024)
-    .outputOptions([
-      '-crf 17',
-      '-error-resilient 1',
-      '-deadline good',
-      '-cpu-used 2'
-    ])
-    .on('start', cmd => {
-      job.log(`[ffmpeg] ${cmd}`)
-    })
-    .on('error', err => {
-      job.log(`[ffmpeg] ${err}`)
-      done(err)
-    })
-    .on('codecData', data => {
-      job.log(`[codec-data] ${JSON.stringify(data)}`)
-      duration = parseDuration(data.duration)
-    })
-    .on('progress', (progress) => {
-      job.log(`[ffmpeg] progress: ${JSON.stringify(progress)}`)
-      const time = parseDuration(progress.timemark)
-      const percent = duration && (time / duration) * 100
-      job.progress(percent)
-    })
-    .on('end', async () => {
-      const deleted = await del([path], { force: true })
-      job.progress(100)
-      job.log(`[del] Deleted temporary file in ${deleted}`)
-      done()
-    })
-    .saveToFile('./output.webm')
-}
-
 app.get('/', (req, res) => {
   res.json({
     name: pkg.name,
     version: pkg.version,
     descriptipn: pkg.descriptipn,
     endpoints: [
+      'GET /metrics',
       'GET /counts',
       'GET /jobs?status=&start=&end=&asc=',
       'GET /jobs/:id',
@@ -172,6 +120,11 @@ app.delete('/jobs/:id', wrapAsync(async (req, res) => {
     res.status(404).json({ error: 'job not found' })
   }
   await job.discard()
+  const isActive = await job.isActive()
+  if (isActive) {
+    await job.moveToFailed({ message: 'Job cancelled by user' }, true)
+    await job.releaseLock()
+  }
   await job.remove()
   res.json({ message: `deleted job with id ${job.id}` })
 }))
