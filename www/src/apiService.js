@@ -4,6 +4,12 @@ export function getJobs () {
   return fetch(`${API}/jobs`).then(res => res.json())
 }
 
+export function cancelJob (id) {
+  return fetch(`${API}/jobs/${id}/cancel`, {
+    method: 'PUT'
+  }).then(res => res.json())
+}
+
 export function deleteJob (id) {
   return fetch(`${API}/jobs/${id}`, {
     method: 'DELETE'

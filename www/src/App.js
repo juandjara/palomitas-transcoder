@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from './Button'
 import AppStyles from './AppStyles'
 import RedisStats from './RedisStats'
-import { getJobs, deleteJob, addJob, getLogs, getMetrics } from './apiService'
+import { getJobs, deleteJob, cancelJob, addJob, getLogs, getMetrics } from './apiService'
 
 function AddIcon ({ color = '#609' }) {
   return (
@@ -10,6 +10,16 @@ function AddIcon ({ color = '#609' }) {
       <path d="M7.086 0.5L7.967 0.5 7.967 7.033 14.5 7.033 14.5 7.967 7.967 7.967 7.967 14.5 7.086 14.5 7.086 7.967 0.5 7.967 0.5 7.033 7.086 7.033z"/>
     </svg>
   )
+}
+
+function formatDate (str) {
+  return new Date(str).toLocaleString('es-ES', {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    minute: '2-digit',
+    hour: '2-digit'
+  })
 }
 
 function App() {
@@ -25,7 +35,12 @@ function App() {
 
   async function fetchJobs () {
     const data = await getJobs()
-    setJobs(data)
+    setJobs(data.sort((a, b) => b.timestamp - a.timestamp))
+  }
+
+  async function onCancel(job) {
+    await cancelJob(job.id)
+    await fetchJobs()
   }
 
   async function onDelete(job) {
@@ -82,16 +97,54 @@ function App() {
           <div className="job" key={job.id}>
             <header>
               <h3>Job #{job.id}</h3>
-              <Button background="#ccc" onClick={() => fetchJobs()}>Refresh</Button>
+              {!job.finishedOn && (<Button background="silver" onClick={() => fetchJobs()}>Refresh</Button>)}
               <div className="spacer"></div>
               <Button background="limegreen" onClick={() => fetchLogs(job)}>Logs</Button>
-              <Button background="indianred" onClick={() => onDelete(job)}>Remove</Button>
+              {job.finishedOn ? (
+                <Button background="indianred" onClick={() => onDelete(job)}>Remove</Button>
+              ) : (
+                <Button background="darkred" onClick={() => onCancel(job)}>Cancel</Button>
+              )}
             </header>
             <p className="progress-label">Transcode progress</p>
             <div className="progress-wrapper">
               <p>{job.progress.toFixed(2)}%</p>
               <progress value={job.progress} max="100" />
             </div>
+            <div className="job-dates">
+              <div className="job-date">
+                <p><strong>Created</strong></p>
+                <p>{formatDate(job.timestamp)}</p>
+              </div>
+              {job.processedOn && (
+                <div className="job-date">
+                  <p><strong>Processed</strong></p>
+                  <p>{formatDate(job.processedOn)}</p>
+                </div>
+              )}
+              {job.finishedOn && (
+                <div className="job-date">
+                  <p><strong>Finished</strong></p>
+                  <p>{formatDate(job.finishedOn)}</p>
+                </div>
+              )}
+            </div>
+            {job.failedReason && (
+              <details>
+                <summary><strong>Error:</strong> {job.failedReason}</summary>
+                <pre>
+                  <code>
+                    {job.stacktrace.join()}
+                  </code>
+                </pre>
+              </details>
+            )}
+            <details>
+              <summary>Input Data</summary>
+              <pre>
+                <code>{JSON.stringify(job.data, null, 2)}</code>
+              </pre>
+            </details>
             {job.logs && (<details open>
               <summary>Logs</summary>
               <pre className="logs">
@@ -100,12 +153,6 @@ function App() {
                 </code>
               </pre>
             </details>)}
-            <details>
-              <summary>Full Data</summary>
-              <pre>
-                <code>{JSON.stringify(job, null, 2)}</code>
-              </pre>
-            </details>
           </div>
         ))}
       </main>

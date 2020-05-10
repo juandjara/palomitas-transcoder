@@ -12,6 +12,10 @@ const Button = styled.button`
   border-radius: 4px;
   background-color: ${props => props.background || 'white'};
 
+  &:hover {
+    opacity: 0.8;
+  }
+
   ${props => props.icon ? `
     padding: 8px;
   ` : ''}
@@ -27,9 +31,10 @@ const Button = styled.button`
     }
   ` : ''}
 
-  &:hover {
-    opacity: 0.8;
-  }
+  ${props => props.disabled ? `
+    pointer-events: none;
+    opacity: 0.5;
+  ` : ''}
 `
 
 export { Button as default }

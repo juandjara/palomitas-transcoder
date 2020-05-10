@@ -134,6 +134,20 @@ const AppStyles = styled.div`
       margin-left: 8px;
     }
   }
+
+  .job-dates {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    margin: 12px 0;
+
+    .job-date {
+      margin-right: 24px;
+      strong {
+        font-size: smaller;
+      }
+    }
+  }
 `
 
 export default AppStyles
