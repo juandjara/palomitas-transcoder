@@ -1,10 +1,33 @@
-const ffmpeg = require('fluent-ffmpeg')
+const fs = require('fs')
 const del = require('del')
+const axios = require('axios')
+const tempy = require('tempy')
+const ffmpeg = require('fluent-ffmpeg')
 const { getVideoName } = require('./storage')
 
 function parseDuration (timeStr) {
   const [h, m, s] = timeStr.split(':').map(Number)
   return (h * 60 * 60) + (m * 60) + s
+}
+
+async function processVideo (job, done) {
+  const url = job.data.url
+  job.log(`[converter.js] starting job for resource ${url}`)
+  if (fs.existsSync(getVideoName(job))) {
+    done(new Error(`Converted file already exists for the input url`))
+    return
+  }
+
+  try {
+    const res = await axios({ url, method: 'get', responseType: 'stream' })
+    const tempPath = tempy.file()
+    job.log(`[converter.js] Created temporary file in ${tempPath}`)
+    res.data.pipe(fs.createWriteStream(tempPath))
+    ffmpegCommand(tempPath, job, done)
+  } catch (err) {
+    console.error('error processing video', err)
+    done(err)
+  }
 }
 
 function ffmpegCommand (path, job, done) {
@@ -22,7 +45,7 @@ function ffmpegCommand (path, job, done) {
       '-cpu-used 2'
     ])
     .on('start', cmd => {
-      job.log(`[ffmpeg] ${cmd}`)
+      job.log(`[ffmpeg] command: ${cmd}`)
     })
     .on('error', err => {
       job.log(`[ffmpeg] ${err}`)
@@ -49,9 +72,9 @@ function ffmpegCommand (path, job, done) {
       const deleted = await del([path], { force: true })
       job.progress(100)
       job.log(`[converter.js] Deleted temporary file in ${deleted}`)
-      done(getVideoName(job))
+      done(null, getVideoName(job))
     })
     .saveToFile(getVideoName(job))
 }
 
-module.exports = { ffmpegCommand }
+module.exports = { processVideo, ffmpegCommand }

@@ -8,7 +8,7 @@ const pkg = require('./package.json')
 const { wrapAsync, ErrorWithCode } = require('./errorHandler')
 const Queue = require('bull')
 const redisMetrics = require('./redisMetrics')
-const { ffmpegCommand } = require('./converter')
+const { processVideo } = require('./converter')
 const { deleteVideo } = require('./storage')
 
 app.set('json spaces', 2)
@@ -23,26 +23,7 @@ const videoQueue = new Queue('video transcoding', {
     host: process.env.REDIS_HOST
   }
 })
-
-const axios = require('axios')
-const tempy = require('tempy')
-const fs = require('fs')
-
-videoQueue.process(async (job, done) => {
-  const url = job.data.url
-  job.log(`starting job for resource ${url}`)
-
-  try {
-    const res = await axios({ url, method: 'get', responseType: 'stream' })
-    const tempPath = tempy.file()
-    job.log(`[tempy] Created temporary file in ${tempPath}`)
-    res.data.pipe(fs.createWriteStream(tempPath))
-    ffmpegCommand(tempPath, job, done)
-  } catch (err) {
-    console.error('error processing video', err)
-    done(err)
-  }
-})
+videoQueue.process(processVideo)
 
 app.get('/', (req, res) => {
   res.json({
@@ -102,6 +83,7 @@ app.post('/jobs', wrapAsync(async (req, res) => {
   if (!url) {
     throw new ErrorWithCode(400, 'Failed to create job. Invalid URL param')
   }
+  // TODO: check if file exists and throw error
   const job = await videoQueue.add({ url: req.body.url })
   res.json({ message: 'job added', job })
 }))
