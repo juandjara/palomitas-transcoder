@@ -29,7 +29,7 @@ function ffmpegCommand (path, job, done) {
       done(err)
     })
     .on('codecData', data => {
-      job.log(`[codec-data] ${JSON.stringify(data)}`)
+      job.log(`[ffmpeg] codec-data: ${JSON.stringify(data)}`)
       duration = parseDuration(data.duration)
     })
     .on('progress', async (progress) => {
@@ -48,8 +48,8 @@ function ffmpegCommand (path, job, done) {
     .on('end', async () => {
       const deleted = await del([path], { force: true })
       job.progress(100)
-      job.log(`[del] Deleted temporary file in ${deleted}`)
-      done()
+      job.log(`[converter.js] Deleted temporary file in ${deleted}`)
+      done(getVideoName(job))
     })
     .saveToFile(getVideoName(job))
 }
