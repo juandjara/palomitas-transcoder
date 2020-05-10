@@ -9,8 +9,8 @@ const errorHandler = (err, req, res, next) => {
     console.error(err.message)
     err.message = "Internal server error"
   }
-  const status = isNaN(err.code) ? 500 : err.code
-  res.status(status).json({ code: err.code, error: err.message })
+  const statusCode = isNaN(err.code) ? 500 : err.code
+  res.status(statusCode).json({ code: statusCode, error: err.message })
 }
 
 function wrapAsync (fn) {
