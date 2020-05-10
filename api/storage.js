@@ -8,6 +8,8 @@ function getVideoName (job, extension = '.webm') {
 }
 
 function deleteVideo (job) {
+  const file = getVideoName(job)
+  return fs.unlink(file)
 }
 
 module.exports = { getVideoName, deleteVideo }

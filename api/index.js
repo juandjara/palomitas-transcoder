@@ -9,6 +9,7 @@ const { wrapAsync, ErrorWithCode } = require('./errorHandler')
 const Queue = require('bull')
 const redisMetrics = require('./redisMetrics')
 const { ffmpegCommand } = require('./converter')
+const { deleteVideo } = require('./storage')
 
 app.set('json spaces', 2)
 app.use(cors())
@@ -101,7 +102,7 @@ app.post('/jobs', wrapAsync(async (req, res) => {
   if (!url) {
     throw new ErrorWithCode(400, 'Failed to create job. Invalid URL param')
   }
-  const job = await videoQueue.add({ time: Date.now(), url: req.body.url })
+  const job = await videoQueue.add({ url: req.body.url })
   res.json({ message: 'job added', job })
 }))
 
@@ -142,6 +143,7 @@ app.delete('/jobs/:id', wrapAsync(async (req, res) => {
     throw new ErrorWithCode(400, 'Active jobs must be cancelled before being deleted')
   }
   await job.remove()
+  await deleteVideo(job)
   res.json({ message: `deleted job with id ${job.id}` })
 }))
 
