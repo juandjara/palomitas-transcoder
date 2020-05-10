@@ -1,5 +1,6 @@
 const ffmpeg = require('fluent-ffmpeg')
 const del = require('del')
+const { getVideoName } = require('./storage')
 
 function parseDuration (timeStr) {
   const [h, m, s] = timeStr.split(':').map(Number)
@@ -50,7 +51,7 @@ function ffmpegCommand (path, job, done) {
       job.log(`[del] Deleted temporary file in ${deleted}`)
       done()
     })
-    .saveToFile('./output.webm')
+    .saveToFile(getVideoName(job))
 }
 
 module.exports = { ffmpegCommand }
