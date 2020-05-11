@@ -8,4 +8,4 @@ You can start a development version that listens for changes in the files with t
 
 ### transcoder details
 
-It only transcode to webm now, video bitrate of 1024k and an audio bitrate of 128k. However, it can run any ffmpeg command that is implemented. Other ffmpeg parameters used are '-crf 17', '-error-resilient 1', '-deadline good', '-cpu-used 2'
+It only transcodes to webm now, with a video bitrate of 1024k and an audio bitrate of 128k. However, it can run any ffmpeg command that is implemented. Other ffmpeg parameters used are '-crf 17', '-error-resilient 1', '-deadline good', '-cpu-used 2'
