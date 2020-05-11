@@ -154,7 +154,7 @@ const AppStyles = styled.div`
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 16px;
+      padding: 12px 16px 0 16px;
 
       button {
         margin-right: -8px;

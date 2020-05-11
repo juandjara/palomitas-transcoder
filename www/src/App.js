@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { Fragment, useState, useEffect, useRef } from 'react';
 import Button from './Button'
 import AppStyles from './AppStyles'
 import RedisStats from './RedisStats'
@@ -31,15 +31,33 @@ function formatDate (str) {
   })
 }
 
-// const Modal = styled.div`
-//   position: fixed;
-//   top: 0;
-//   left: 0;
-//   width: 100%;
-//   height: 100%;
-//   background-color: rgba(0,0,0, 0.25);
-//   z-index: 1;
-// `
+function formatDuration (time) {
+  const second = Math.floor(time / 1000)
+  const minute = Math.floor(second / 60)
+  const hour = Math.floor(minute / 60)
+  return `${hour ? `${hour}h` : ''} ${minute - (hour * 60)}min ${second - (minute * 60)}s`
+}
+
+// from here: https://overreacted.io/making-setinterval-declarative-with-react-hooks/
+function useInterval(callback, delay) {
+  const savedCallback = useRef();
+
+  // Remember the latest callback.
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  // Set up the interval.
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null) {
+      let id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
+}
 
 function App() {
   const [metrics, setMetrics] = useState(null)
@@ -47,6 +65,8 @@ function App() {
   const [showForm, setShowForm] = useState(false)
   const [newUrl, setNewUrl] = useState("")
   const [logs, setLogs] = useState(null)
+  const [pollDelay, setPollDelay] = useState(1000)
+  const [selectedLogsId, setSelectedLogsId] = useState(null)
 
   async function fetchMetrics () {
     const data = await getMetrics()
@@ -79,23 +99,54 @@ function App() {
     setShowForm(!showForm)
   }
 
-  async function fetchLogs ({ id }) {
+  async function fetchLogs (id) {
     const { logs } = await getLogs(id)
     setLogs(logs)
   }
+
+  async function openLogs ({ id }) {
+    await fetchLogs(id)
+    setSelectedLogsId(id)
+  }
+
+  function closeLogs () {
+    setSelectedLogsId(null)
+    setLogs(null)
+  }
+
+  function onHidden () {
+    setPollDelay(document.hidden ? null : 1000)
+  }
+
+  const someJobActive = jobs.some(j => !j.finishedOn)
 
   useEffect(() => {
     fetchJobs()
     fetchMetrics()
   }, [])
 
+  useInterval(() => {
+    fetchJobs()
+    fetchMetrics()
+    if (selectedLogsId) {
+      fetchLogs(selectedLogsId)
+    }
+  }, someJobActive ? pollDelay : null)
+
+  useEffect(() => {
+    document.addEventListener('visibilitychange', onHidden, false)
+    return () => {
+      document.removeEventListener('visibilitychange', onHidden, false)
+    }
+  }, [])
+
   return (
     <AppStyles className="body-background">
       {logs && (
-        <Modal onClose={() => setLogs(null)}>
+        <Modal onClose={closeLogs}>
           <header>
-            <h2>Logs</h2>
-            <Button title="Close" icon onClick={() => setLogs(null)}>
+          <h2>Logs for job #{selectedLogsId}</h2>
+            <Button title="Close" icon onClick={closeLogs}>
               <CloseIcon />
             </Button>
           </header>
@@ -133,7 +184,7 @@ function App() {
               <h3>Job #{job.id}</h3>
               {!job.finishedOn && (<Button background="silver" onClick={() => fetchJobs()}>Refresh</Button>)}
               <div className="spacer"></div>
-              <Button background="limegreen" onClick={() => fetchLogs(job)}>Logs</Button>
+              <Button background="limegreen" onClick={() => openLogs(job)}>Logs</Button>
               {job.finishedOn ? (
                 <Button background="indianred" onClick={() => onDelete(job)}>Remove</Button>
               ) : (
@@ -150,17 +201,33 @@ function App() {
                 <p><strong>Created</strong></p>
                 <p>{formatDate(job.timestamp)}</p>
               </div>
+              <div className="job-date">
+                <p><strong>Time waiting</strong></p>
+                <p>{formatDuration(job.processedOn - job.timestamp)}</p>
+              </div>
               {job.processedOn && (
-                <div className="job-date">
-                  <p><strong>Processed</strong></p>
-                  <p>{formatDate(job.processedOn)}</p>
-                </div>
+                <Fragment>
+                  <div className="job-date">
+                    <p><strong>Started</strong></p>
+                    <p>{formatDate(job.processedOn)}</p>
+                  </div>
+                  <div className="job-date">
+                    <p><strong>Time processing</strong></p>
+                    <p>{formatDuration((job.finishedOn || Date.now()) - job.processedOn)}</p>
+                  </div>
+                </Fragment>
               )}
               {job.finishedOn && (
-                <div className="job-date">
-                  <p><strong>Finished</strong></p>
-                  <p>{formatDate(job.finishedOn)}</p>
-                </div>
+                <Fragment>
+                  <div className="job-date">
+                    <p><strong>Finished</strong></p>
+                    <p>{formatDate(job.finishedOn)}</p>
+                  </div>
+                  <div className="job-date">
+                    <p><strong>Time total</strong></p>
+                    <p>{formatDuration(job.finishedOn - job.timestamp)}</p>
+                  </div>
+                </Fragment>
               )}
             </div>
             <details>
@@ -179,14 +246,6 @@ function App() {
                 </pre>
               </details>
             )}
-            {/* {job.logs && (<details open>
-              <summary>Logs</summary>
-              <pre className="logs">
-                <code>
-                  {job.logs.join('\n')}
-                </code>
-              </pre>
-            </details>)} */}
           </div>
         ))}
       </main>

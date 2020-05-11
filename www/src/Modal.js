@@ -40,7 +40,7 @@ function Modal ({ children, onClose = noop }) {
     return () => {
       window.removeEventListener('click', onModalClick)
     }
-  })
+  }, [])
 
   return (
     <ModalStyles>
