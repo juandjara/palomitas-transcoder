@@ -62,6 +62,8 @@ const RedisStatsStyles = styled.section`
 `
 
 const RedisStats = ({ stats, className }) => {
+  if (!stats) return null
+
   const {
     redis_version,
     used_memory,

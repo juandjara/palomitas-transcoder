@@ -119,6 +119,7 @@ function App() {
   }
 
   const someJobActive = jobs.some(j => !j.finishedOn)
+  const serverIsDown = metrics && metrics.error
 
   useEffect(() => {
     fetchJobs()
@@ -161,9 +162,11 @@ function App() {
       )}
       <header className="container">
         <h1>Palomitas Transcoder</h1>
-        <Button title="Add new job" icon onClick={toggleForm} className="add-btn">
-          <AddIcon />
-        </Button>
+        {!serverIsDown && (
+          <Button title="Add new job" icon onClick={toggleForm} className="add-btn">
+            <AddIcon />
+          </Button>
+        )}
       </header>
       {showForm && (<form onSubmit={onSubmit} className="container add-form">
         <input 
@@ -175,9 +178,11 @@ function App() {
           <span>Add job</span>
         </Button>
       </form>)}
-      {metrics && <RedisStats className="container" stats={metrics} />}
+      {!serverIsDown && <RedisStats className="container" stats={metrics} />}
       <main className="container">
-        {jobs.length === 0 && <p className="no-data">No jobs in the queue</p>}
+        {serverIsDown ? (
+          <p className="no-data error">Server is down</p>
+        ) : (jobs.length === 0 && <p className="no-data">No jobs in the queue</p>)}
         {jobs.map(job => (
           <div className="job" key={job.id}>
             <header>

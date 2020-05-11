@@ -26,6 +26,10 @@ const AppStyles = styled.div`
     margin-bottom: 3rem;
   }
 
+  .error {
+    color: #cd5c5c;
+  }
+
   footer {
     text-align: right;
     font-size: 12px;
