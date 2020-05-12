@@ -1,5 +1,4 @@
 const fs = require('fs')
-const del = require('del')
 const axios = require('axios')
 const tempy = require('tempy')
 const ffmpeg = require('fluent-ffmpeg')
@@ -30,9 +29,15 @@ async function processVideo (job, done) {
   }
 }
 
-function ffmpegCommand (path, job, done) {
+function ffmpegCommand (tempPath, job, done) {
   let duration = 0
-  const command = ffmpeg(path)
+
+  async function deleteTempFile () {
+    await fs.promises.unlink(tempPath)
+    job.log(`[converter.js] Deleted temporary file in ${tempPath}`)
+  }
+
+  const command = ffmpeg(tempPath)
     .videoCodec('libvpx')
     .audioCodec('libvorbis')
     .format('webm')
@@ -60,6 +65,7 @@ function ffmpegCommand (path, job, done) {
       if (!isActive) {
         job.log(`[converter.js] Detected inactive job #${job.id}. Stopping ffmpeg process.`)
         command.kill()
+        await deleteTempFile()
         return
       }
 
@@ -69,9 +75,8 @@ function ffmpegCommand (path, job, done) {
       job.progress(percent)
     })
     .on('end', async () => {
-      const deleted = await del([path], { force: true })
+      await deleteTempFile()
       job.progress(100)
-      job.log(`[converter.js] Deleted temporary file in ${deleted}`)
       done(null, getVideoName(job))
     })
     .saveToFile(getVideoName(job))
