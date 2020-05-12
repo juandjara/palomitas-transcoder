@@ -14,8 +14,8 @@ code {
 
 body {
   background-size: 150px 150px;
-  background-image: url('/background-noise.png');
   background-color: #4f43f2;
+  background-image: url('./img/background-noise.png');
   background-repeat: repeat;
   color: white;
   min-height: 100vh;
