@@ -1,10 +1,13 @@
 const path = require('path')
 const fs = require('fs').promises
 
+const STORAGE_PATH = './files'
+
 function getVideoName (job, extension = '.webm') {
-  const name = path.basename(job.data.url)
+  const urlFilename = path.basename(job.data.url)
   const ext = path.extname(job.data.url)  
-  return decodeURIComponent(name.replace(ext, extension))
+  const outputFilename = decodeURIComponent(urlFilename.replace(ext, '')) + extension
+  return path.join(STORAGE_PATH, outputFilename)
 }
 
 function deleteVideo (job) {
@@ -12,4 +15,4 @@ function deleteVideo (job) {
   return fs.unlink(file)
 }
 
-module.exports = { getVideoName, deleteVideo }
+module.exports = { STORAGE_PATH, getVideoName, deleteVideo }

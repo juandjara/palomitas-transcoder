@@ -3,7 +3,7 @@ import Button from './Button'
 import AppStyles from './AppStyles'
 import RedisStats from './RedisStats'
 import Modal from './Modal'
-import { getJobs, deleteJob, cancelJob, addJob, getLogs, getMetrics } from './apiService'
+import { getJobs, deleteJob, cancelJob, addJob, getLogs, getMetrics, API } from './apiService'
 
 function AddIcon ({ color = '#609' }) {
   return (
@@ -189,7 +189,12 @@ function App() {
               <h3>Job #{job.id}</h3>
               {!job.finishedOn && (<Button background="silver" onClick={() => fetchJobs()}>Refresh</Button>)}
               <div className="spacer"></div>
-              <Button background="limegreen" onClick={() => openLogs(job)}>Logs</Button>
+              <Button background="darkslateblue" onClick={() => openLogs(job)}>Logs</Button>
+              {job.returnvalue && (
+                <a href={`${API}/files/${job.returnvalue}`} target="_blank">
+                  <Button background="limegreen">Download</Button>
+                </a>
+              )}
               {job.finishedOn ? (
                 <Button background="indianred" onClick={() => onDelete(job)}>Remove</Button>
               ) : (

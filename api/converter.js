@@ -2,7 +2,7 @@ const fs = require('fs')
 const axios = require('axios')
 const tempy = require('tempy')
 const ffmpeg = require('fluent-ffmpeg')
-const { getVideoName } = require('./storage')
+const { getVideoName, STORAGE_PATH } = require('./storage')
 
 function parseDuration (timeStr) {
   const [h, m, s] = timeStr.split(':').map(Number)
@@ -31,6 +31,7 @@ async function processVideo (job, done) {
 
 function ffmpegCommand (tempPath, job, done) {
   let duration = 0
+  const outputFile = getVideoName(job)
 
   async function deleteTempFile () {
     await fs.promises.unlink(tempPath)
@@ -77,9 +78,10 @@ function ffmpegCommand (tempPath, job, done) {
     .on('end', async () => {
       await deleteTempFile()
       job.progress(100)
-      done(null, getVideoName(job))
+      job.log(`[converter.js] Finished transcoding job for output file ${outputFile}`)
+      done(null, outputFile.replace(`${STORAGE_PATH}/`, ''))
     })
-    .saveToFile(getVideoName(job))
+    .saveToFile(outputFile)
 }
 
 module.exports = { processVideo, ffmpegCommand }

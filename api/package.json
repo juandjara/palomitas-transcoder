@@ -30,6 +30,7 @@
     "morgan": "^1.10.0",
     "node-ffprobe": "^3.0.0",
     "redis-info": "^3.0.7",
+    "serve-index": "^1.9.1",
     "tempy": "^0.5.0"
   },
   "devDependencies": {

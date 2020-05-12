@@ -1,5 +1,6 @@
 require('dotenv').config()
-const app = require('express')()
+const express = require('express')
+const app = express()
 const cors = require('cors')
 const helmet = require('helmet')
 const logger = require('morgan')
@@ -10,6 +11,7 @@ const Queue = require('bull')
 const redisMetrics = require('./redisMetrics')
 const { processVideo } = require('./converter')
 const { deleteVideo } = require('./storage')
+const serveIndex = require('serve-index')
 
 app.set('json spaces', 2)
 app.use(cors())
@@ -24,6 +26,8 @@ const videoQueue = new Queue('video transcoding', {
   }
 })
 videoQueue.process(processVideo)
+
+app.use('/files', express.static(`${__dirname}/files`), serveIndex(`${__dirname}/files`, { icons: true }))
 
 app.get('/', (req, res) => {
   res.json({
