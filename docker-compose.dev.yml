@@ -7,6 +7,7 @@ services:
     command: npm run dev
     volumes:
       - ./api:/usr/app
+      - ./api/storage:/usr/app/storage
     ports:
       - 4000:4000
       - 9229:9229 # node debugger port

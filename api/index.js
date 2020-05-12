@@ -27,7 +27,8 @@ const videoQueue = new Queue('video transcoding', {
 })
 videoQueue.process(processVideo)
 
-app.use('/files', express.static(`${__dirname}/files`), serveIndex(`${__dirname}/files`, { icons: true }))
+const storagePath = process.env.STORAGE_PATH || `${__dirname}/storage`
+app.use('/files', express.static(storagePath), serveIndex(storagePath, { icons: true }))
 
 app.get('/', (req, res) => {
   res.json({

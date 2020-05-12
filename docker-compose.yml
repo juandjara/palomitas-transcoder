@@ -16,6 +16,8 @@ services:
     build: api
     command: npm start
     restart: always
+    volumes:
+      - ./api/storage:/usr/app/storage
     labels:
       - traefik.enable=false
     networks:
